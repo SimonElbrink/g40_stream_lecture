@@ -1,8 +1,11 @@
 package se.lexicon;
 
+import se.lexicon.model.Gender;
 import se.lexicon.model.Person;
+import se.lexicon.model.PersonDto;
 import se.lexicon.service.People;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,7 +50,9 @@ public class Examples {
     public Person getYoungest(){
 
         Stream<Person> personStream = people.stream();
-        Optional<Person> youngest = personStream.max(Comparator.comparing(Person::getDateOfBirth));
+        Optional<Person> youngest =
+                personStream
+                .max(Comparator.comparing(Person::getDateOfBirth));
 
         return youngest.orElseThrow(RuntimeException::new);
     }
@@ -69,7 +74,7 @@ public class Examples {
                 .reduce("", (s1, s2) -> s1 + "," +s2);
     }
 
-    public Set<Person> CollectToSet(){
+    public Set<Person> collectToSet(){
         return people.stream()
 //                .collect(Collectors.toCollection(() -> new HashSet<>()));
 //                .collect(Collectors.toCollection(HashSet::new));
@@ -86,6 +91,79 @@ public class Examples {
         return people.stream()
                 .collect(Collectors.groupingBy(person -> person.getLastName()));
     }
+
+    public Map<Boolean, List<Person>> toMapBoolean(){
+        return people.stream()
+                .collect(Collectors.partitioningBy(person -> person.getGender().equals(Gender.FEMALE)));
+    }
+
+
+    public Person findById(int id){
+        return people.stream()
+                .filter(person -> person.getPersonId() == id)
+                .findFirst()
+                .orElseThrow(RuntimeException::new);
+
+//        for (Person p : people) {
+//            if (p.getPersonId() == id){
+//                return p;
+//            }
+//        }
+//        return null;
+    }
+
+
+    public List<Person> findByLastName(String lastname){
+        return people.stream()
+                .filter(person -> person.getLastName().equals(lastname))
+//                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+                .collect(Collectors.toList());
+    }
+
+    public List<PersonDto> findByBirthdateYearReturnFullName(int year){
+        return people.stream()
+//                .peek(System.out::println)
+                .filter(person -> person.getDateOfBirth().getYear() == year)
+//                .peek(System.out::println) // After Filtering
+//                .map(person -> person.getFirstName() + " " + person.getLastName())
+//                .map(person -> new PersonDto(person.getPersonId(), person.getFirstName() + " " + person.getLastName()))
+//                .map((person -> convert(person)))
+                .map(this::convert)
+                //Peek after converting to personDto
+                .peek(System.out::println)
+                .collect(Collectors.toCollection( ArrayList::new));
+
+    }
+
+    private PersonDto convert(Person person){
+        if (person == null) return null;
+        return new PersonDto(person.getPersonId(), person.getFirstName() + " " + person.getLastName());
+    }
+
+
+    public LocalDate[] createCalenderYear(int year){
+
+        LocalDate seed = LocalDate.ofYearDay(year, 1);
+
+        return Stream.iterate(seed, (date) -> date.plusDays(1))
+                .limit(seed.isLeapYear() ? 366 : 365)
+                .toArray(LocalDate[]::new);
+    }
+
+
+    public List<Person> getSortedCollection(){
+        return people.stream()
+                .sorted(
+                        Comparator.comparing(Person::getLastName)
+                                .thenComparing(Person::getFirstName)
+                                .thenComparing(Person::getDateOfBirth)
+                                .thenComparing(Person::getPersonId)
+                )
+                .collect(Collectors.toList());
+    }
+
+
+
 
 
 
